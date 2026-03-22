@@ -100,26 +100,35 @@ public class GameHubService : IGameHubService
 
     public void AddGame(Game game)
     {
+        ArgumentNullException.ThrowIfNull(game);
+        if (_games.Any(g => g.Id == game.Id))
+            throw new InvalidOperationException($"Game with Id {game.Id} already exists.");
+
         _games.Add(game);
-        var jsonString = JsonSerializer.Serialize(_games, WriteOptions);
-        var filePath = Path.Combine(_dataFolderPath, FileNameGames);
-        File.WriteAllText(filePath, jsonString);
+        File.WriteAllText(Path.Combine(_dataFolderPath, FileNameGames),
+            JsonSerializer.Serialize(_games, WriteOptions));
     }
 
     public void AddUser(User user)
     {
+        ArgumentNullException.ThrowIfNull(user);
+        if (_users.Any(u => u.Id == user.Id))
+            throw new InvalidOperationException($"User with Id {user.Id} already exists.");
+
         _users.Add(user);
-        var jsonString = JsonSerializer.Serialize(_users, WriteOptions);
-        var filePath = Path.Combine(_dataFolderPath, FileNameUsers);
-        File.WriteAllText(filePath, jsonString);
+        File.WriteAllText(Path.Combine(_dataFolderPath, FileNameUsers),
+            JsonSerializer.Serialize(_users, WriteOptions));
     }
 
     public void AddAchievement(Achievement achievement)
     {
+        ArgumentNullException.ThrowIfNull(achievement);
+        if (_achievements.Any(a => a.Code == achievement.Code))
+            throw new InvalidOperationException($"Achievement with Code '{achievement.Code}' already exists.");
+
         _achievements.Add(achievement);
-        var jsonString = JsonSerializer.Serialize(_achievements, WriteOptions);
-        var filePath = Path.Combine(_dataFolderPath, FileNameAchievements);
-        File.WriteAllText(filePath, jsonString);
+        File.WriteAllText(Path.Combine(_dataFolderPath, FileNameAchievements),
+            JsonSerializer.Serialize(_achievements, WriteOptions));
     }
 
     public void AddUnlock(Unlock unlock)
@@ -133,12 +142,16 @@ public class GameHubService : IGameHubService
 
     public void StartSession(int userId, int gameId)
     {
+        if (!_users.Any(u => u.Id == userId))
+            throw new InvalidOperationException($"User with Id {userId} not found.");
+        if (!_games.Any(g => g.Id == gameId))
+            throw new InvalidOperationException($"Game with Id {gameId} not found.");
+
         _playSessions.Add(new PlaySession { UserId = userId, GameId = gameId, StartTime = DateTime.Now });
         SessionStarted?.Invoke(this, new SessionEventArgs { UserId = userId, GameId = gameId });
         LogTelemetry("Start", userId, $"GameId: {gameId}");
-        var jsonString = JsonSerializer.Serialize(_playSessions, WriteOptions);
-        var filePath = Path.Combine(_dataFolderPath, FileNamePlaySessions);
-        File.WriteAllText(filePath, jsonString);
+        File.WriteAllText(Path.Combine(_dataFolderPath, FileNamePlaySessions),
+            JsonSerializer.Serialize(_playSessions, WriteOptions));
     }
 
     public void EndSession(int userId, int gameId)
@@ -254,6 +267,11 @@ public class GameHubService : IGameHubService
 
     public void UnlockAchievement(int userId, string achievementCode)
     {
+        if (!_users.Any(u => u.Id == userId))
+            throw new InvalidOperationException($"User with Id {userId} not found.");
+        if (!_achievements.Any(a => a.Code == achievementCode))
+            throw new InvalidOperationException($"Achievement '{achievementCode}' not found.");
+
         if (!HasUserUnlockedAchievement(userId, achievementCode))
         {
             var unlock = new Unlock
