@@ -249,3 +249,6 @@ dotnet test
 - **Telemetry logged once** — unlock is logged in `AddUnlock`, not duplicated in the event handler
 - **Generic `ReadJson<T>` local function** — eliminates 6 identical deserialize blocks in `LoadAsync`
 - **Interface contracts** — `IGameHubService` and `IAchievementEngine` decouple consumers from implementation, enabling unit testing and future substitution
+
+## 📋 Changelog
+See [CHANGELOG.md](CHANGELOG.md) for version history.
