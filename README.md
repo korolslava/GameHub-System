@@ -2,7 +2,7 @@
 
 [![.NET 8](https://img.shields.io/badge/.NET-8.0-blueviolet)](https://dotnet.microsoft.com/)
 [![Language](https://img.shields.io/badge/language-C%23-239120?logo=csharp)](https://learn.microsoft.com/en-us/dotnet/csharp/)
-[![Tests](https://img.shields.io/badge/tests-xUnit-blue)](https://xunit.net/)
+[![Tests](https://github.com/korolslava/GameHub-System/actions/workflows/tests.yml/badge.svg)](https://github.com/korolslava/GameHub-System/actions/workflows/tests.yml)
 [![Patterns](https://img.shields.io/badge/patterns-Observer%20%7C%20Rule%20Engine%20%7C%20Service%20Layer-orange)]()
 [![License](https://img.shields.io/badge/license-MIT-green)]()
 
