@@ -260,6 +260,134 @@ public class GameHub
             File.WriteAllText(filePath, jsonString);
         }
     }
+
+    public Dictionary<string, int> TotalMinutesByGenre(int userId)
+    {
+        var genreMinutes = new Dictionary<string, int>();
+        var userSessions = _playSessions.Where(s => s.UserId == userId && s.EndTime != default);
+
+        foreach (var session in userSessions)
+        {
+            var game = _games.Find(g => g.Id == session.GameId);
+            if (game != null)
+            {
+                var duration = (session.EndTime - session.StartTime).TotalMinutes;
+                var genreKey = game.Genre.ToString();
+                if (genreMinutes.ContainsKey(genreKey))
+                {
+                    genreMinutes[genreKey] += (int)duration;
+                }
+                else
+                {
+                    genreMinutes[genreKey] = (int)duration;
+                }
+            }
+        }
+
+        return genreMinutes;
+    }
+
+    public List<(Game game, int minutes)> Top3GamesByPlayTime(int userId)
+    {
+        var gameMinutes = new Dictionary<int, int>();
+        var userSessions = _playSessions.Where(s => s.UserId == userId && s.EndTime != default);
+
+        foreach (var session in userSessions)
+        {
+            var duration = (session.EndTime - session.StartTime).TotalMinutes;
+            if (gameMinutes.ContainsKey(session.GameId))
+            {
+                gameMinutes[session.GameId] += (int)duration;
+            }
+            else
+            {
+                gameMinutes[session.GameId] = (int)duration;
+            }
+        }
+
+        var top3Games = gameMinutes.OrderByDescending(gm => gm.Value).Take(3)
+            .Select(gm =>
+            {
+                var game = _games.Find(g => g.Id == gm.Key);
+                return (game!, gm.Value);
+            }).ToList();
+
+        return top3Games;
+    }
+
+    public List<User> TopUsersByPoints(int topN)
+    {
+        var userPoints = new Dictionary<int, int>();
+
+        foreach (var unlock in _unlocks)
+        {
+            var achievement = _achievements.Find(a => a.Code == unlock.AchievementCode);
+            if (achievement != null)
+            {
+                if (userPoints.ContainsKey(unlock.UserId))
+                {
+                    userPoints[unlock.UserId] += achievement.Points;
+                }
+                else
+                {
+                    userPoints[unlock.UserId] = achievement.Points;
+                }
+            }
+        }
+
+        var topUsers = userPoints.OrderByDescending(up => up.Value).Take(topN)
+            .Select(up => _users.Find(u => u.Id == up.Key)!)
+            .ToList();
+
+        return topUsers;
+    }
+
+    public List<Achievement> AchievementsNotUnlocked(int userId)
+    {
+        var unlockedCodes = _unlocks.Where(u => u.UserId == userId).Select(u => u.AchievementCode).ToHashSet();
+        var notUnlocked = _achievements.Where(a => !unlockedCodes.Contains(a.Code)).ToList();
+        return notUnlocked;
+    }
+
+    public Achievement? GetAchievementByCode(string code)
+    {
+        return _achievements.Find(a => a.Code == code);
+    }
+
+    public bool HasUserUnlockedAchievement(int userId, string achievementCode)
+    {
+        return _unlocks.Any(u => u.UserId == userId && u.AchievementCode == achievementCode);
+    }
+
+    public void UnlockAchievement(int userId, string achievementCode)
+    {
+        if (!HasUserUnlockedAchievement(userId, achievementCode))
+        {
+            var unlock = new Unlock
+            {
+                UserId = userId,
+                AchievementCode = achievementCode,
+                UnlockDate = DateTime.Now
+            };
+            AddUnlock(unlock);
+        }
+    }
+
+    public List<PlaySession> GetUserSessions(int userId)
+    {
+        return _playSessions.Where(s => s.UserId == userId && s.EndTime != default).ToList();
+    }
+
+    public Game? GetGameById(int gameId)
+    {
+        return _games.Find(g => g.Id == gameId);
+    }
+
+    public void RaiseAchievementUnlocked(object sender, AchievementUnlockedEventArgs args)
+    {
+        AchievementUnlocked?.Invoke(sender, args);
+        LogTelemetry("Unlock", args.UserId, args.AchievementCode);
+    }
 }
 
 public class SessionEventArgs
